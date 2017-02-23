@@ -1,0 +1,65 @@
+<style>
+	.delay,
+	.delayminmax {
+		vertical-align: middle;
+	}
+	
+	.delay {
+		width: 260px;
+	}
+	
+	body {
+		font-family: arial;
+		padding: 40px;
+	}
+	
+	.delayWrapper {
+		margin-top: 40px;
+	}
+</style>
+
+<audio controls>
+  <source src="http://sport24radio.live24.gr/sport24radio" type="audio/mpeg">
+Your browser does not support the audio element.
+</audio>
+<div class="delayWrapper">
+	<div class="delayLabel">Delay: <span class="delayValue"></span></div>
+
+	<span class="delaymin delayminmax">0</span>
+	<input class="delay" type="range" name="points" min="0" max="120" defaultValue="0">
+	<span class="delaymax delayminmax">0</span> sec
+
+</div>
+<script>
+	//http://sport24radio.live24.gr/sport24radio
+	var audioElement = document.querySelector('audio');
+	var range = document.querySelector(".delay");
+	var txt = document.querySelector(".delayValue");
+	var maxv = document.querySelector(".delaymax");
+	var delayValue = 0;
+	var ctx = new AudioContext();
+	var maxDelay = 120;
+	range.max = maxDelay;
+	maxv.innerHTML = "" + maxDelay;
+	var delay;
+	var source = ctx.createMediaElementSource(audioElement);
+
+	//ctx.start();
+	audioElement.crossOrigin = "anonymous";
+	audioElement.addEventListener('play', function() {
+		delay = ctx.createDelay(120);
+		delay.delayTime.value = delayValue;
+		source.connect(delay);
+		delay.connect(ctx.destination);
+	});
+
+	range.value = 0;
+	txt.innerHTML = range.value;
+	range.addEventListener("change", function(v) {
+		delayValue = +range.value;
+		if (delay) {
+			delay.delayTime.value = delayValue;
+		}
+		txt.innerHTML = range.value;
+	})
+</script>
