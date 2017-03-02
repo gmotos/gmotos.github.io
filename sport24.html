@@ -16,6 +16,50 @@
 	.delayWrapper {
 		margin-top: 40px;
 	}
+	
+	.audioctrls {
+		margin: 15px 0;
+	}
+	
+	.volctrl {
+		width: 5px;
+		height: 24px;
+		background: #7880de;
+		border-right: 1px solid #ffffff;
+		border-left: 1px solid #ffffff;
+		display: block;
+		float: left;
+		transition: transform .5s, background .5s;
+	}
+	
+	.volval,
+	.delayValue {
+		color: #7880de;
+	}
+	
+	.volctrl:hover {
+		transform: translateY(-3px) scaleY(2) ;
+	}
+	
+	.audioctrls:hover .volctrl:hover ~ .volctrl,
+	.volctrl.active ~ .volctrl {
+		background: #eeeeee;
+	}
+
+	.audioctrls:hover .volctrl {
+		background: #7880de;
+	}
+	
+	.clear,
+	.clear:after {
+		clear: both;
+		content: '';
+		display: block;
+	}
+	
+	.volumeLbl {
+		margin-top: 15px;
+	}
 </style>
 
 <audio controls>
@@ -23,12 +67,17 @@
 Your browser does not support the audio element.
 </audio>
 <div class="delayWrapper">
-	<div class="delayLabel">Delay: <span class="delayValue"></span></div>
+	<div class="delayLabel">Delay: <span class="delayValue"></span> sec</div>
 
 	<span class="delaymin delayminmax">0</span>
 	<input class="delay" type="range" name="points" min="0" max="179" defaultValue="0">
 	<span class="delaymax delayminmax">0</span> sec
 
+</div>
+<div class="volumeLbl">
+	Volume: <span class="volval">100</span>%
+</div>
+<div class="clear audioctrls">
 </div>
 <script>
 	//http://sport24radio.live24.gr/sport24radio
@@ -44,14 +93,22 @@ Your browser does not support the audio element.
 	var delay;
 	var source = ctx.createMediaElementSource(audioElement);
 
-    delay = ctx.createDelay(maxDelay);
-    delay.delayTime.value = delayValue;
-    source.connect(delay);
-    delay.connect(ctx.destination);
-	//ctx.start();
+	delay = ctx.createDelay(maxDelay);
+	var gainNode = ctx.createGain();
+	delay.delayTime.value = delayValue;
+
+
+	//var sourceNode = ctx.createBufferSource();
+	source.connect(delay);
+	delay.connect(gainNode);
+
+	//sourceNode.connect(gainNode);
+
+	gainNode.connect(ctx.destination);
+	//sourceNode.connect(ctx.destination);
+
 	audioElement.crossOrigin = "anonymous";
-	audioElement.addEventListener("play", function() {
-	});
+	audioElement.addEventListener("play", function() {});
 
 	range.value = 0;
 	txt.innerHTML = range.value;
@@ -61,5 +118,19 @@ Your browser does not support the audio element.
 			delay.delayTime.value = delayValue;
 		}
 		txt.innerHTML = range.value;
+	});
+	var maxVolCtrls = 21; //+1 is to include 100%
+	document.querySelector(".audioctrls").innerHTML = Array.apply(null, new Array(maxVolCtrls)).map(function(a,i){
+		return `<a class="volctrl ${i===maxVolCtrls?"active":""}" value="${i}" href="#"></a>`;
+	}).join("");
+	[].slice.call(document.querySelectorAll(".volctrl")).forEach(function(ctrl) {
+		ctrl.addEventListener("click", function() {
+			gainNode.gain.value = (this.getAttribute("value")) / (maxVolCtrls);
+			document.querySelector(".volval").innerHTML = (this.getAttribute("value")) * 100 / (maxVolCtrls-1);
+			[].slice.call(document.querySelectorAll(".volctrl")).forEach(function(ctrl2) {
+				ctrl2.classList.remove("active");
+			});
+			this.classList.add("active");
+		})
 	})
 </script>
