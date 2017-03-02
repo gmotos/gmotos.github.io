@@ -26,7 +26,7 @@ Your browser does not support the audio element.
 	<div class="delayLabel">Delay: <span class="delayValue"></span></div>
 
 	<span class="delaymin delayminmax">0</span>
-	<input class="delay" type="range" name="points" min="0" max="120" defaultValue="0">
+	<input class="delay" type="range" name="points" min="0" max="179" defaultValue="0">
 	<span class="delaymax delayminmax">0</span> sec
 
 </div>
@@ -38,13 +38,13 @@ Your browser does not support the audio element.
 	var maxv = document.querySelector(".delaymax");
 	var delayValue = 0;
 	var ctx = new AudioContext();
-	var maxDelay = 120;
+	var maxDelay = 179;
 	range.max = maxDelay;
 	maxv.innerHTML = "" + maxDelay;
 	var delay;
 	var source = ctx.createMediaElementSource(audioElement);
 
-    delay = ctx.createDelay(120);
+    delay = ctx.createDelay(maxDelay);
     delay.delayTime.value = delayValue;
     source.connect(delay);
     delay.connect(ctx.destination);
