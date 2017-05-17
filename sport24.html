@@ -112,7 +112,7 @@
 <div class="clear audioctrls">
 </div>
 <div class="clear">
-	Βρες μια χαρακτηριστική φάση και μέτρα το χρόνο μέχρι να την δείς στο stream:
+	<strong>Συγχρόνισέ το!</strong><br/> Άκου στο ραδιόφωνο μια χαρακτηριστική φάση και μέτρα το χρόνο μέχρι να την δεις στο stream:
 </div>
 <div class="clear">
 <div class="clear counter">
@@ -242,9 +242,7 @@
 		}
 		var reset = $(".counterrst");
 		var counterbtn = $(".counter");
-
-		
-		console.log(counterbtn)
+				
 		counterbtn.addEventListener("click", toggleTime);
 		reset.addEventListener("click", resetTimer);
 		draw();
@@ -252,10 +250,10 @@
 
 		function draw(){
 			if (!timer){
-				counterbtn.innerText = "Εκκίνηση χρονομέτρησης "
+				counterbtn.innerText = "Εκκίνηση χρονομέτρησης (Άκουσα μια χαρακτηριστική φάση)"
 				reset.classList.add("hidden")
 			} else {
-				counterbtn.innerText = "Αύξηση καθυστέρησης κατα " + countTime() + " δευτ";
+				counterbtn.innerText = "Λήξη χρονομέτρησης (Είδα τη φάση στο stream!). Αύξηση καθυστέρησης κατα " + countTime() + " δευτ";
 				reset.classList.remove("hidden")
 			}
 		}
