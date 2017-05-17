@@ -60,31 +60,84 @@
 	.volumeLbl {
 		margin-top: 15px;
 	}
-</style>
 
-<audio controls>
-  <source src="http://sport24radio.live24.gr/sport24radio" type="audio/mpeg">
-Your browser does not support the audio element.
-</audio>
+	.volbtn {
+		display: inline-block;
+		padding: 2px 5px;
+		background: #7880de;
+		color: #ffffff;
+		vertical-align: middle;
+		border-radius: 3px;
+		font-family: monospace;
+		cursor: pointer;
+		font-weight: bold;
+	}
+	::selection {
+		background: transparent;
+	}
+	.audiowrapper{
+		overflow: hidden;
+		width: 65px;
+	}
+	.hidden {
+		display:none !important;
+	}
+	.counter, .counterrst{
+		margin-bottom: 10px;
+		cursor: pointer;
+		color: rebeccapurple;
+		border-bottom: 1px dashed;
+		display:inline-block;
+	}
+</style>
+<div class="audiowrapper">
+	<audio  controls><!--autoplay-->
+	<source type="audio/mpeg">
+	Your browser does not support the audio element.
+	</audio>
+</div>
 <div class="delayWrapper">
 	<div class="delayLabel">Delay: <span class="delayValue"></span> sec</div>
-
+	
+	<span class="volbtn minusbtn">-</span>
 	<span class="delaymin delayminmax">0</span>
 	<input class="delay" type="range" name="points" min="0" max="179" defaultValue="0">
 	<span class="delaymax delayminmax">0</span> sec
+	<span class="volbtn plusbtn">+</span>
 
 </div>
 <div class="volumeLbl">
-	Volume: <span class="volval">100</span>%
+	Volume: <span class="volval">100</span>% <!--<span class="mute">&#128263;</span>-->
 </div>
 <div class="clear audioctrls">
 </div>
+<div class="clear">
+	Βρες μια χαρακτηριστική φάση και μέτρα το χρόνο μέχρι να την δείς στο stream:
+</div>
+<div class="clear">
+<div class="clear counter">
+	
+</div>
+
+</div>
+<div class="clear">
+<div class="clear counterrst hidden">
+	Reset
+</div>
+
+</div>
+
 <script>
 	//http://sport24radio.live24.gr/sport24radio
-	var audioElement = document.querySelector("audio");
-	var range = document.querySelector(".delay");
-	var txt = document.querySelector(".delayValue");
-	var maxv = document.querySelector(".delaymax");
+	var $ = document.querySelector.bind(document);
+	var $$ = document.querySelectorAll.bind(document);
+	
+	var source = $("source");
+	source.setAttribute("src", "http://sport24radio.live24.gr/sport24radio?foo="+Math.random())
+	var audioElement = $("audio");
+	var range = $(".delay");
+	var txt = $(".delayValue");
+	var maxv = $(".delaymax");
 	var delayValue = 0;
 	var ctx = new AudioContext();
 	var maxDelay = 179;
@@ -92,6 +145,19 @@ Your browser does not support the audio element.
 	maxv.innerHTML = "" + maxDelay;
 	var delay;
 	var source = ctx.createMediaElementSource(audioElement);
+
+	var prevValue = 0;
+	audioElement.onpause = function(e) {
+		prevValue = gainNode.gain.value;
+		setSound(0);
+		e.preventDefault();
+	};
+	audioElement.onplay = function(e) {
+		if (prevValue)
+			setSound(prevValue);
+		prevValue = 0;
+		e.preventDefault();
+	};
 
 	delay = ctx.createDelay(maxDelay);
 	var gainNode = ctx.createGain();
@@ -120,17 +186,78 @@ Your browser does not support the audio element.
 		txt.innerHTML = range.value;
 	});
 	var maxVolCtrls = 21; //+1 is to include 100%
-	document.querySelector(".audioctrls").innerHTML = Array.apply(null, new Array(maxVolCtrls)).map(function(a,i){
+	$(".audioctrls").innerHTML = Array.apply(null, new Array(maxVolCtrls)).map(function(a,i){
 		return `<a class="volctrl ${i===maxVolCtrls?"active":""}" value="${i}" href="#"></a>`;
 	}).join("");
-	[].slice.call(document.querySelectorAll(".volctrl")).forEach(function(ctrl) {
+	[].slice.call($$(".volctrl")).forEach(function(ctrl) {
 		ctrl.addEventListener("click", function() {
+			if (prevValue){
+				prevValue = (this.getAttribute("value")) / (maxVolCtrls)
+				return;
+			}
 			gainNode.gain.value = (this.getAttribute("value")) / (maxVolCtrls);
-			document.querySelector(".volval").innerHTML = (this.getAttribute("value")) * 100 / (maxVolCtrls-1);
-			[].slice.call(document.querySelectorAll(".volctrl")).forEach(function(ctrl2) {
+			$(".volval").innerHTML = (this.getAttribute("value")) * 100 / (maxVolCtrls-1);
+			[].slice.call($$(".volctrl")).forEach(function(ctrl2) {
 				ctrl2.classList.remove("active");
 			});
 			this.classList.add("active");
 		})
 	})
+	function setSound (value){
+		gainNode.gain.value = value;
+	}
+	function changeDelay (mod){
+		delay.delayTime.value += mod;
+		range.value = delay.delayTime.value;
+		txt.innerHTML = delay.delayTime.value;
+	}
+	$(".plusbtn").addEventListener("click", changeDelay.bind(this, 1))
+	$(".minusbtn").addEventListener("click", changeDelay.bind(this, -1))
+	
+	;(function(){
+		var timer = 0;
+		function toggleTime(){
+			if (!timer){
+				startTimer();
+			} else {
+				changeDelay (countTime())
+				resetTimer();
+			}
+			draw();	
+		}
+
+		function startTimer(){
+			timer = new Date().getTime();
+		}
+
+		function countTime(){
+			var time2 = new Date().getTime();
+			var diff = time2 - timer;
+			return Math.round(diff / 1000) + 1 //1 sec reflex adjust
+		}
+
+		function resetTimer(){
+			timer = 0;
+			draw();
+		}
+		var reset = $(".counterrst");
+		var counterbtn = $(".counter");
+
+		
+		console.log(counterbtn)
+		counterbtn.addEventListener("click", toggleTime);
+		reset.addEventListener("click", resetTimer);
+		draw();
+		setInterval(draw, 1000);
+
+		function draw(){
+			if (!timer){
+				counterbtn.innerText = "Εκκίνηση χρονομέτρησης "
+				reset.classList.add("hidden")
+			} else {
+				counterbtn.innerText = "Αύξηση καθυστέρησης κατα " + countTime() + " δευτ";
+				reset.classList.remove("hidden")
+			}
+		}
+	})();
 </script>
