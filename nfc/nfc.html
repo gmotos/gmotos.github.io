@@ -1,0 +1,194 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  </head>
+  <style rel="stylesheet">
+    button {
+      width: 150px;
+      height: 50px;
+      margin: 10px 20px;
+      display: block;
+    }
+    .buttons {
+      margin-top: 50px;
+      text-align: center;
+    }
+    body {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+  <body>
+    <div class="buttons">
+      <button id="scan"></button>
+      <button id="send"></button>
+    </div>
+
+    <div id="output"></div>
+  </body>
+</html>
+<script>
+  const output = document.getElementById("output");
+  function log(...l) {
+    const d = new Date();
+    const f = (n) =>
+      n.toLocaleString("en-US", {
+        minimumIntegerDigits: 2,
+        useGrouping: false,
+      });
+
+    output.innerHTML +=
+      `${f(d.getHours())}:${f(d.getMinutes())}:${f(d.getSeconds())} ` +
+      l.join(" ") +
+      "<br/>";
+  }
+</script>
+<script>
+  const scanButton = document.getElementById("scan");
+  const sendButton = document.getElementById("send");
+
+  var scanState = "scan";
+  var sendState = "send";
+
+  var ndef;
+  var abortController;
+  var scanAbortController;
+
+  function refreshUI() {
+    scanButton.textContent = scanState;
+    sendButton.textContent = sendState;
+  }
+
+  refreshUI();
+
+  if ("NDEFReader" in window) {
+    ndef = new NDEFReader();
+  }
+
+  scanButton.onclick = async () => {
+    askThenRead();
+  };
+  function nfcSupported() {
+    return "NDEFReader" in window;
+  }
+
+  async function askThenRead() {
+    const nfcPermissionStatus = await navigator.permissions.query({
+      name: "nfc",
+    });
+    log(nfcPermissionStatus.state);
+    read();
+  }
+
+  function init() {
+    if (!ndef) {
+      ndef = new NDEFReader();
+    }
+  }
+
+  function write() {
+    init();
+    if (sendState === "send") {
+      log("Try to write.");
+      abortController = new AbortController();
+      abortController.signal.onabort = (event) => {
+        log("Send has been aborted.");
+      };
+      ndef
+        .write(
+          "Hello World",
+          { signal: abortController.signal, /*overwrite: false*/ }
+        )
+        .then(() => {
+          log("Message written.");
+          sendState = "send";
+          refreshUI();
+        })
+        .catch((error) => {
+          log(`Write failed :-( try again: ${error}.`);
+          sendState = "send";
+          refreshUI();
+        });
+
+      sendState = "abort";
+      refreshUI();
+    } else {
+      abortController.abort();
+      abortController.signal.onabort = undefined;
+
+      sendState = "send";
+      refreshUI();
+    }
+  }
+
+  sendButton.onclick = (event) => {
+    write(ndef);
+  };
+
+  function read() {
+    init();
+    if (scanState === "scan") {
+      scanAbortController = new AbortController();
+      scanAbortController.signal.onabort = (event) => {
+        log("Scan has been aborted.");
+      };
+
+      ndef
+        .scan({ signal: scanAbortController.signal })
+        .then(() => {
+          log("Scan started successfully.");
+          ndef.onreadingerror = (e, a) => {
+            log("NFC Reading Error: ", JSON.stringify(e));
+          };
+          ndef.onreading = (event) => {
+            log("NDEF message read.");
+            const message = event.message;
+            for (const record of message.records) {
+              log("Record type:  " + record.recordType);
+              log("MIME type:    " + record.mediaType);
+              log("Record id:    " + record.id);
+              switch (record.recordType) {
+                case "text":
+                  // TODO: Read text record with record data, lang, and encoding.
+                  break;
+                case "url":
+                  // TODO: Read URL record with record data.
+                  break;
+                default:
+                // TODO: Handle other records with record data.
+              }
+            }
+          };
+        })
+        .catch((error) => {
+          log(`Error! Scan failed to start: ${error}.`);
+        });
+        
+        scanState = "abort"
+        refreshUI();
+    } else {
+      scanAbortController.abort();
+      scanState = "scan"
+      refreshUI();
+    }
+  }
+
+  
+  document.onvisibilitychange = (event) => {
+    if (document.hidden) {
+      log(
+        "All NFC operations are automatically suspended when document is hidden."
+      );
+    } else {
+      log("All NFC operations are resumed, if needed.");
+    }
+  };
+
+  if ("NDEFReader" in window) {
+  } else {
+    log("NFC not supported/active!");
+  }
+</script>
